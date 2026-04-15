@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Book {
+  id           String   @id @default(cuid())
+  title        String
+  author       String
+  coverUrl     String?   // URL de portada
+  coverBase64  String?   // Portada cargada como base64
+  status       String    @default("WISHLIST") // WISHLIST, OWNED, READING, FINISHED
+  purchaseLink String?   // Link de compra (wishlist)
+  price        Float?    // Precio (wishlist)
+  currentPage  Int       @default(0)
+  totalPages   Int?
+  rating       Int?      // 1-5 estrellas
+  startDate    DateTime? // Inicio de lectura
+  finishDate   DateTime? // Fin de lectura
+  notes        Note[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  bookId    String
+  type      String   @default("THOUGHT") // THOUGHT, QUOTE, SUMMARY
+  content   String
+  page      Int?     // Nº de página de referencia
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

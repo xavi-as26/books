@@ -9,7 +9,7 @@ import { WishlistScreen } from '@/components/wishlist-screen'
 import { SettingsScreen } from '@/components/settings-screen'
 import { AddBookModal } from '@/components/add-book-modal'
 import { BookDetailScreen } from '@/components/book-detail-screen'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,7 +21,20 @@ const queryClient = new QueryClient({
 })
 
 export default function Home() {
-  const { activeTab, selectedBookId, showAddBook, addBookDefaultStatus } = useAppStore()
+  const { activeTab, selectedBookId, showAddBook, addBookDefaultStatus, setSharedUrl, setShowAddBook, setAddBookDefaultStatus } = useAppStore()
+
+  // Handle shared URL from Share Target
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const sharedUrl = params.get('sharedUrl')
+    if (sharedUrl) {
+      setSharedUrl(sharedUrl)
+      setAddBookDefaultStatus('WISHLIST')
+      setShowAddBook(true)
+      // Clean URL without reloading
+      window.history.replaceState({}, '', '/')
+    }
+  }, [setSharedUrl, setShowAddBook, setAddBookDefaultStatus])
 
   return (
     <QueryClientProvider client={queryClient}>

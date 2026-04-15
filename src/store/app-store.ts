@@ -13,6 +13,8 @@ interface AppState {
   setAddBookDefaultStatus: (status: 'WISHLIST' | 'OWNED') => void
   searchQuery: string
   setSearchQuery: (q: string) => void
+  sharedUrl: string
+  setSharedUrl: (url: string) => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -26,4 +28,6 @@ export const useAppStore = create<AppState>((set) => ({
   setAddBookDefaultStatus: (status) => set({ addBookDefaultStatus: status }),
   searchQuery: '',
   setSearchQuery: (q) => set({ searchQuery: q }),
+  sharedUrl: '',
+  setSharedUrl: (url) => set({ sharedUrl: url }),
 }))

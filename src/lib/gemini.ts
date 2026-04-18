@@ -14,7 +14,7 @@ export interface BookMetadataExtraction {
 function initGemini(): GenerativeModel {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY
   if (!apiKey) {
-    throw new Error('GOOGLE_GEMINI_API_KEY environment variable is not set')
+    throw new Error('GOOGLE_GEMINI_API_KEY environment variable is not set. Configure it in .env.local or Vercel settings.')
   }
 
   const genAI = new GoogleGenerativeAI(apiKey)
@@ -34,6 +34,12 @@ export async function extractBookMetadataWithGemini(
   siteName: string
 ): Promise<BookMetadataExtraction | null> {
   try {
+    const apiKey = process.env.GOOGLE_GEMINI_API_KEY
+    if (!apiKey) {
+      console.warn('[gemini] GOOGLE_GEMINI_API_KEY not configured, skipping Gemini extraction')
+      return null
+    }
+
     const model = getGeminiModel()
 
     const prompt = `Eres un asistente especializado en extraer metadatos de libros desde paginas web y resultados de busqueda.

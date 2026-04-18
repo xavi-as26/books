@@ -144,17 +144,12 @@ npm start
 
 ## Troubleshooting
 
-**"GOOGLE_GEMINI_API_KEY environment variable is not set"**
-- Verifica que `.env.local` tenga la clave
-- Reinicia el servidor Next.js
+Si encuentras errores, consulta **TROUBLESHOOTING.md** en la raíz del proyecto.
 
-**"Timeout waiting for Gemini response"**
-- La API tardó más de 30s
-- Usa web search como fallback automático
-
-**Precio incorrecto**
-- Gemini valida precios internamente
-- Revisa el prompt si necesita ajustes para nuevos formatos regionales
+Los casos más comunes:
+1. **API key no configurada** → Lee Troubleshooting #1
+2. **URL no soportada** → Lee Troubleshooting #2
+3. **Sitio bloqueado** → Lee Troubleshooting #3
 
 ## Migración Futura
 

@@ -344,6 +344,7 @@ export async function GET(request: NextRequest) {
 
     // ─── Layer 3: AI extraction with Gemini ──────────────────────────
     let aiResult: BookMetadata | null = null
+    let geminiAvailable = true
 
     try {
       let aiContext = ''
@@ -373,9 +374,16 @@ export async function GET(request: NextRequest) {
       const geminiResult = await extractBookMetadataWithGemini(aiContext, url, siteName)
       if (geminiResult) {
         aiResult = geminiResult
+      } else if (!process.env.GOOGLE_GEMINI_API_KEY) {
+        console.warn('[extract-metadata] Gemini API key not configured, using web search fallback')
+        geminiAvailable = false
       }
     } catch (aiError) {
-      console.error('[extract-metadata] AI failed:', aiError instanceof Error ? aiError.message : String(aiError))
+      const errorMsg = aiError instanceof Error ? aiError.message : String(aiError)
+      console.error('[extract-metadata] AI failed:', errorMsg)
+      if (errorMsg.includes('GOOGLE_GEMINI_API_KEY')) {
+        geminiAvailable = false
+      }
     }
 
     // ─── Layer 4: External APIs for covers & metadata ───
@@ -478,6 +486,7 @@ export async function GET(request: NextRequest) {
       siteName,
       extractedWith: aiResult ? 'gemini' : (searchResults.length > 0 ? 'search' : 'regex'),
       description,
+      geminiAvailable,
     }
 
     console.log('[extract-metadata] Final:', JSON.stringify(response))

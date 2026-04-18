@@ -1,4 +1,8 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": ".next/standalone"
+  "outputDirectory": ".next/standalone",
+  "env": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "installCommand": "npm install"
 }

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { extractBookMetadataWithGemini } from '@/lib/gemini'
 
 // ═══════════════════════════════════════════════════════════
-// AI-POWERED BOOK METADATA EXTRACTION - v4
-// Strategy: page_reader + web_search + Open Library API + AI
+// AI-POWERED BOOK METADATA EXTRACTION - v5
+// Strategy: page_reader + web_search + Open Library API + Gemini AI
 // ═══════════════════════════════════════════════════════════
 
 interface SearchResult {
@@ -40,28 +41,7 @@ function validateBookPrice(price: number): number | null {
   return price
 }
 
-/** Try to fix common price parsing mistakes from AI */
-function fixPrice(raw: unknown): number | null {
-  if (raw === null || raw === undefined) return null
-  if (typeof raw === 'number') {
-    const validated = validateBookPrice(raw)
-    if (validated !== null) return validated
-    // AI might give price in wrong format (e.g., 3990000 instead of 3990)
-    if (raw > 150000) {
-      // Try dividing by 10, 100, 1000 to find a reasonable price
-      for (const divisor of [10, 100, 1000]) {
-        const divided = Math.round(raw / divisor)
-        if (validateBookPrice(divided) !== null) return divided
-      }
-    }
-    return null
-  }
-  if (typeof raw === 'string') {
-    const parsed = chileanPriceToInt(raw)
-    if (parsed !== null) return validateBookPrice(parsed)
-  }
-  return null
-}
+
 
 function cleanTitle(title: string): string {
   return title
@@ -362,7 +342,7 @@ export async function GET(request: NextRequest) {
       console.error('[extract-metadata] Web search failed:', searchError instanceof Error ? searchError.message : String(searchError))
     }
 
-    // ─── Layer 3: AI extraction ─────────────────────────
+    // ─── Layer 3: AI extraction with Gemini ──────────────────────────
     let aiResult: BookMetadata | null = null
 
     try {
@@ -390,78 +370,9 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      const completionPromise = zai.chat.completions.create({
-        messages: [
-          {
-            role: 'system',
-            content: `Eres un asistente especializado en extraer metadatos de libros desde paginas web y resultados de busqueda.
-
-REGLAS CRITICAS PARA PRECIOS (PESOS CHILENOS - CLP):
-- Los precios estan en Pesos Chilenos, NO hay decimales.
-- Los puntos y comas son SEPARADORES DE MILES: "$3.990" = 3990, "$15.990" = 15990
-- Devuelve el precio como NUMERO ENTERO: 3990, NO "3.990" ni "3990.00"
-- Si hay varios precios, elige el mas relevante (nuevo, no usado).
-- Un libro en Chile cuesta entre $1.000 y $150.000 CLP.
-- NUNCA devuelvas precios mayores a 150000 o menores a 1000.
-- Si no encuentras un precio claro, devuelve null.
-
-REGLAS PARA AUTOR:
-- Extrae SOLO el nombre del autor del libro.
-- Si hay multiples autores, separalos con coma.
-- NO pongas nombres de tiendas como autor.
-
-REGLAS PARA PORTADA:
-- Busca la URL de la portada en og:image, json-ld "image", o tags <img>.
-- Prefiere URLs con "cover", "product", "large", "front".
-- Si no encuentras URL valida, devuelve "" (vacio).
-
-REGLAS PARA TITULO:
-- Limpia el titulo: elimina "Libro " al inicio y sufijos de tiendas.
-- Si dice "Amazon.com: Atomic Habits" → devuelve "Atomic Habits"
-
-REGLAS PARA ISBN:
-- Busca en la URL o contenido. Ej: "_pwp-9788408109734" → 9788408109734
-- Si no lo encuentras, devuelve "".
-
-Responde SOLO con JSON valido, sin markdown:
-{"title":"","author":"","coverImage":"","price":null,"isbn":"","description":""}`
-          },
-          {
-            role: 'user',
-            content: `Extrae metadatos del libro. URL original: ${url}\nSitio: ${siteName}\n\n${aiContext}`
-          }
-        ],
-        temperature: 0.05,
-        max_tokens: 600,
-      })
-
-      const completion = await Promise.race([
-        completionPromise,
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 30000))
-      ])
-
-      if (completion) {
-        const aiContent = completion.choices?.[0]?.message?.content || ''
-        console.log('[extract-metadata] AI raw:', aiContent.substring(0, 500))
-
-        const jsonStr = aiContent
-          .replace(/```json\s*/g, '')
-          .replace(/```\s*/g, '')
-          .trim()
-
-        const parsed = JSON.parse(jsonStr)
-
-        if (parsed && typeof parsed === 'object') {
-          aiResult = {
-            title: typeof parsed.title === 'string' ? parsed.title.trim() : '',
-            author: typeof parsed.author === 'string' ? parsed.author.trim() : '',
-            coverImage: typeof parsed.coverImage === 'string' ? parsed.coverImage.trim() : '',
-            price: fixPrice(parsed.price),
-            isbn: typeof parsed.isbn === 'string' ? parsed.isbn.trim().replace(/-/g, '') : '',
-            description: typeof parsed.description === 'string' ? parsed.description.trim() : '',
-          }
-          console.log('[extract-metadata] AI result:', JSON.stringify(aiResult))
-        }
+      const geminiResult = await extractBookMetadataWithGemini(aiContext, url, siteName)
+      if (geminiResult) {
+        aiResult = geminiResult
       }
     } catch (aiError) {
       console.error('[extract-metadata] AI failed:', aiError instanceof Error ? aiError.message : String(aiError))
@@ -565,7 +476,7 @@ Responde SOLO con JSON valido, sin markdown:
       isbn,
       url,
       siteName,
-      extractedWith: aiResult ? 'ai' : (searchResults.length > 0 ? 'search' : 'regex'),
+      extractedWith: aiResult ? 'gemini' : (searchResults.length > 0 ? 'search' : 'regex'),
       description,
     }
 

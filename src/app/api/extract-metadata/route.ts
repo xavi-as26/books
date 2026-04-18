@@ -572,9 +572,13 @@ Responde SOLO con JSON valido, sin markdown:
     console.log('[extract-metadata] Final:', JSON.stringify(response))
     return NextResponse.json(response)
   } catch (error) {
-    console.error('[extract-metadata] Fatal error:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('[extract-metadata] Fatal error:', errorMessage)
     return NextResponse.json(
-      { error: 'Error extracting metadata from URL' },
+      { 
+        error: 'Error extracting metadata from URL',
+        details: errorMessage 
+      },
       { status: 500 }
     )
   }

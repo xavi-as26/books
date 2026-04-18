@@ -62,7 +62,7 @@ export function WishlistScreen() {
         <p className="text-muted-foreground mt-1 ios-body">
           {books.length} libro{books.length !== 1 ? 's' : ''} por comprar
           {totalValue > 0 && (
-            <span className="text-ios-purple font-medium"> · ${totalValue.toFixed(2)}</span>
+            <span className="text-ios-purple font-medium"> · ${Math.round(totalValue).toLocaleString('es-ES')}</span>
           )}
         </p>
       </div>
@@ -117,7 +117,7 @@ export function WishlistScreen() {
                 {/* Price */}
                 {book.price && (
                   <p className="text-sm font-semibold text-ios-purple mt-1">
-                    ${book.price.toFixed(2)}
+                    ${Math.round(book.price).toLocaleString('es-ES')}
                   </p>
                 )}
 

@@ -260,7 +260,7 @@ export function BookDetailScreen() {
                   <span className="text-sm font-medium text-ios-blue">Ir a comprar</span>
                 </div>
                 {book.price && (
-                  <span className="text-sm font-semibold text-ios-purple">${book.price.toFixed(2)}</span>
+                  <span className="text-sm font-semibold text-ios-purple">${Math.round(book.price).toLocaleString('es-ES')}</span>
                 )}
               </a>
             </div>
